@@ -251,8 +251,10 @@ export default class Paste extends Module {
     const isCurrentBlockDefault = BlockManager.currentBlock && BlockManager.currentBlock.tool.isDefault;
     const needToReplaceCurrentBlock = isCurrentBlockDefault && BlockManager.currentBlock.isEmpty;
 
-    dataToInsert.map(
-      async (content, i) => this.insertBlock(content, i === 0 && needToReplaceCurrentBlock)
+    await Promise.all(
+      dataToInsert.map(async (content, i) =>
+        this.insertBlock(content, i === 0 && needToReplaceCurrentBlock)
+      )
     );
 
     if (BlockManager.currentBlock) {
