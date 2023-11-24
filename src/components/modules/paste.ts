@@ -240,9 +240,9 @@ export default class Paste extends Module {
 
     if (dataToInsert.length === 1) {
       if (!dataToInsert[0].isBlock) {
-        this.processInlinePaste(dataToInsert.pop());
+        await this.processInlinePaste(dataToInsert.pop());
       } else {
-        this.processSingleBlock(dataToInsert.pop());
+        await this.processSingleBlock(dataToInsert.pop());
       }
 
       return;
@@ -252,11 +252,10 @@ export default class Paste extends Module {
     const needToReplaceCurrentBlock = isCurrentBlockDefault && BlockManager.currentBlock.isEmpty;
 
     await Promise.all(
-      dataToInsert.map(async (content, i) =>
+      dataToInsert.map((content, i) =>
         this.insertBlock(content, i === 0 && needToReplaceCurrentBlock)
       )
-    );
-
+    )
     if (BlockManager.currentBlock) {
       Caret.setToBlock(BlockManager.currentBlock, Caret.positions.END);
     }
@@ -756,7 +755,7 @@ export default class Paste extends Module {
       dataToInsert.tool !== currentBlock.name ||
       !$.containsOnlyInlineElements(dataToInsert.content.innerHTML)
     ) {
-      this.insertBlock(dataToInsert, currentBlock?.tool.isDefault && currentBlock.isEmpty);
+      await this.insertBlock(dataToInsert, currentBlock?.tool.isDefault && currentBlock.isEmpty);
 
       return;
     }
@@ -786,7 +785,7 @@ export default class Paste extends Module {
           BlockManager.currentBlock.tool.isDefault &&
           BlockManager.currentBlock.isEmpty;
 
-        const insertedBlock = BlockManager.paste(blockData.tool, blockData.event, needToReplaceCurrentBlock);
+        const insertedBlock = await BlockManager.paste(blockData.tool, blockData.event, needToReplaceCurrentBlock);
 
         Caret.setToBlock(insertedBlock, Caret.positions.END);
 
@@ -847,19 +846,19 @@ export default class Paste extends Module {
    * @param {boolean} canReplaceCurrentBlock - if true and is current Block is empty, will replace current Block
    * @returns {void}
    */
-  private insertBlock(data: PasteData, canReplaceCurrentBlock = false): void {
+  private async insertBlock(data: PasteData, canReplaceCurrentBlock = false): Promise<void> {
     const { BlockManager, Caret } = this.Editor;
     const { currentBlock } = BlockManager;
     let block: Block;
 
     if (canReplaceCurrentBlock && currentBlock && currentBlock.isEmpty) {
-      block = BlockManager.paste(data.tool, data.event, true);
+      block = await BlockManager.paste(data.tool, data.event, true);
       Caret.setToBlock(block, Caret.positions.END);
 
       return;
     }
 
-    block = BlockManager.paste(data.tool, data.event);
+    block = await BlockManager.paste(data.tool, data.event);
 
     Caret.setToBlock(block, Caret.positions.END);
   }

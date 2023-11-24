@@ -388,32 +388,36 @@ export default class BlockManager extends Module {
    * @param {PasteEvent} pasteEvent - pasted data
    * @param {boolean} replace - should replace current block
    */
-  public paste(
+  public async paste(
     toolName: string,
     pasteEvent: PasteEvent,
     replace = false
-  ): Block {
+  ): Promise<Block> {
     const block = this.insert({
       tool: toolName,
       replace,
     });
 
-    try {
-      /**
-       * We need to call onPaste after Block will be ready
-       * because onPaste could change tool's root element, and we need to do that after block.watchBlockMutations() bound
-       * to detect tool root element change
-       *
-       * @todo make this.insert() awaitable and remove requestIdleCallback
-       */
-      window.requestIdleCallback(() => {
-        block.call(BlockToolAPI.ON_PASTE, pasteEvent);
-      });
-    } catch (e) {
-      _.log(`${toolName}: onPaste callback call is failed`, 'error', e);
-    }
+    const promise: Promise<Block> = new Promise((resolve, reject) => {
+      try {
+        /**
+         * We need to call onPaste after Block will be ready
+         * because onPaste could change tool's root element, and we need to do that after block.watchBlockMutations() bound
+         * to detect tool root element change
+         *
+         * @todo make this.insert() awaitable and remove requestIdleCallback
+         */
+        window.requestIdleCallback(() => {
+          block.call(BlockToolAPI.ON_PASTE, pasteEvent);
+          resolve(block);
+        });
+      } catch (e) {
+        _.log(`${toolName}: onPaste callback call is failed`, 'error', e);
+        reject(e);
+      }
+    });
 
-    return block;
+    return await promise;
   }
 
   /**
